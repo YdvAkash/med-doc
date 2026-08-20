@@ -1,0 +1,142 @@
+name: Build and Deploy Spring Boot
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+
+  build-and-deploy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # 1. Checkout source code
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Setup Java
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      # 3. Run tests
+      - name: Run tests
+        run: mvn clean test
+
+      # 4. Build Spring Boot JAR
+      - name: Build application
+        run: mvn clean package -DskipTests
+
+      # 5. Login to GHCR
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 6. Build Docker image
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            .
+
+      # 7. Push Docker image
+      - name: Push Docker image
+        run: |
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+      
+      # 8. PREPARE EC2 INSTANCE
+      - name: Prepare EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{secrets.EC2_HOST}}
+          username: ${{secrets.EC2_USERNAME}}
+          key: ${{secrets.EC2_SSH_KEY}}
+
+          script:
+            set -e
+            echo "Checking EC2..."
+
+            # -----------------------------------
+            # Update package information
+            # -----------------------------------
+            sudo apt-get update -y
+
+            # -----------------------------------
+            # Install Docker if missing
+            # -----------------------------------
+            if ! command -v docker >/dev/null 2>&1; then
+              echo "Docker not found. Installing Docker..."
+
+              sudo apt-get install -y docker.io
+
+              sudo systemctl enable docker
+              sudo systemctl start docker
+            else
+              echo "Docker already installed."
+            fi
+
+            # -----------------------------------
+            # Make sure Docker is running
+            # -----------------------------------
+            if ! sudo systemctl is-active --quiet docker; then
+              echo "Docker is not running. Starting Docker..."
+              sudo systemctl start docker
+            fi
+
+            # -----------------------------------
+            # Install Docker Compose if missing
+            # -----------------------------------
+            if ! docker compose version >/dev/null 2>&1; then
+              echo "Docker Compose not found. Installing..."
+
+              sudo apt-get install -y docker-compose-plugin
+            else
+              echo "Docker Compose already installed."
+            fi
+
+            # -----------------------------------
+            # Create application directory
+            # -----------------------------------
+            mkdir -p ~/my-spring-app
+
+            echo "EC2 preparation completed."
+
+            
+      # 8. Deploy to EC2
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+
+          script: |
+
+            cd ~/my-spring-app
+
+            export IMAGE_TAG=${{ github.sha }}
+
+            docker compose pull
+
+            docker compose up -d
+
+            docker image prune -f
