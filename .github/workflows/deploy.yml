@@ -71,7 +71,7 @@ jobs:
           username: ${{secrets.EC2_USERNAME}}
           key: ${{secrets.EC2_SSH_KEY}}
 
-          script:
+          script: |
             set -e
             echo "Checking EC2..."
 
@@ -120,7 +120,7 @@ jobs:
 
             echo "EC2 preparation completed."
 
-            
+
       # 8. Deploy to EC2
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.0
