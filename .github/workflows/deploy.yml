@@ -39,7 +39,7 @@ jobs:
 
       # 4. Build Spring Boot JAR
       - name: Build application
-        run: mvn clean package -DskipTests
+        run: mvn package -DskipTests
 
       # 5. Login to GHCR
       - name: Login to GHCR
@@ -62,18 +62,21 @@ jobs:
         run: |
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-      
-      # 8. PREPARE EC2 INSTANCE
+
+      # 8. Prepare EC2
       - name: Prepare EC2
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{secrets.EC2_HOST}}
-          username: ${{secrets.EC2_USERNAME}}
-          key: ${{secrets.EC2_SSH_KEY}}
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
 
           script: |
             set -e
+
+            echo "================================="
             echo "Checking EC2..."
+            echo "================================="
 
             # -----------------------------------
             # Update package information
@@ -110,29 +113,42 @@ jobs:
             # -----------------------------------
             if ! sudo systemctl is-active --quiet docker; then
               echo "Docker is not running. Starting Docker..."
+
               sudo systemctl start docker
+            else
+              echo "Docker is running."
             fi
 
             # -----------------------------------
             # Install Docker Compose if missing
             # -----------------------------------
-            if ! docker compose version >/dev/null 2>&1; then
+            if ! sudo docker compose version >/dev/null 2>&1; then
               echo "Docker Compose not found. Installing..."
 
-              sudo apt-get install -y docker-compose-plugin
+              sudo apt-get install -y docker-compose-v2
             else
               echo "Docker Compose already installed."
             fi
+
+            # -----------------------------------
+            # Verify installations
+            # -----------------------------------
+            echo "Docker version:"
+            sudo docker --version
+
+            echo "Docker Compose version:"
+            sudo docker compose version
 
             # -----------------------------------
             # Create application directory
             # -----------------------------------
             mkdir -p ~/my-spring-app
 
+            echo "================================="
             echo "EC2 preparation completed."
+            echo "================================="
 
-
-      # 8. Deploy to EC2
+      # 9. Deploy to EC2
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.0
         with:
