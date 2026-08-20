@@ -95,6 +95,17 @@ jobs:
             fi
 
             # -----------------------------------
+            # Install Docker Compose if missing
+            # -----------------------------------
+            if ! sudo docker compose version >/dev/null 2>&1; then
+              echo "Docker Compose not found. Installing..."
+
+              sudo apt-get install -y docker-compose-v2
+            else
+              echo "Docker Compose already installed."
+            fi
+
+            # -----------------------------------
             # Make sure Docker is running
             # -----------------------------------
             if ! sudo systemctl is-active --quiet docker; then
@@ -128,15 +139,24 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-
           script: |
+            set -e
 
+            mkdir -p ~/my-spring-app
             cd ~/my-spring-app
 
-            export IMAGE_TAG=${{ github.sha }}
+            cat > docker-compose.yml <<'EOF'
+            services:
+              med-doc:
+                image: ghcr.io/ydvakash/med-doc:${{ github.sha }}
+                container_name: med-doc
+                restart: unless-stopped
+                ports:
+                  - "8080:8080"
+            EOF
+
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             docker compose pull
-
-            docker compose up -d
-
+            docker compose up -d --remove-orphans
             docker image prune -f
