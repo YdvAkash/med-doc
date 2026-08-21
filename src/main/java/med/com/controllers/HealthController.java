@@ -1,5 +1,6 @@
 package med.com.controllers;
 
+import med.com.dtos.response.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,7 +13,8 @@ import java.util.Map;
 public class HealthController {
 
     @GetMapping("/health")
-    public ResponseEntity<Map<String, String>> healthCheck() {
-        return ResponseEntity.ok(Map.of("status", "UP", "message", "Service is running optimally"));
+    public ResponseEntity<ApiResponse<Map<String, String>>> healthCheck() {
+        Map<String, String> healthData = Map.of("status", "UP", "message", "Service is running optimally");
+        return ResponseEntity.ok(ApiResponse.success(healthData));
     }
 }
