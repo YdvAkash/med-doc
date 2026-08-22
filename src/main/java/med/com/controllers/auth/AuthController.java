@@ -14,9 +14,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.security.Principal;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -39,15 +42,15 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @GetMapping("/getprofile")
-    public ResponseEntity<ApiResponse<profileDTO>> getProfile(java.security.Principal principal) {
+    @GetMapping("/profile")
+    public ResponseEntity<ApiResponse<profileDTO>> getProfile(Principal principal) {
         profileDTO profile = authService.getProfile(principal.getName());
         return ResponseEntity.ok(ApiResponse.success(profile));
     }
 
-    @org.springframework.web.bind.annotation.PutMapping("/updateprofile")
+    @PutMapping("/profile")
     public ResponseEntity<ApiResponse<profileDTO>> updateProfile(
-            java.security.Principal principal,
+            Principal principal,
             @RequestBody UpdateProfileRequest request
     ) {
         profileDTO updatedProfile = authService.updateProfile(principal.getName(), request);
