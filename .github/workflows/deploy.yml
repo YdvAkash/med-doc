@@ -120,17 +120,6 @@ jobs:
             fi
 
             # -----------------------------------
-            # Install Docker Compose if missing
-            # -----------------------------------
-            if ! sudo docker compose version >/dev/null 2>&1; then
-              echo "Docker Compose not found. Installing..."
-
-              sudo apt-get install -y docker-compose-v2
-            else
-              echo "Docker Compose already installed."
-            fi
-
-            # -----------------------------------
             # Verify installations
             # -----------------------------------
             echo "Docker version:"
@@ -149,7 +138,6 @@ jobs:
             echo "================================="
 
       # 9. Deploy to EC2
-        # 9. Deploy to EC2
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -170,7 +158,7 @@ jobs:
             # -----------------------------------
             # Create Docker Compose file
             # -----------------------------------
-            cat > docker-compose.yml <<'EOF'
+            cat > docker-compose.yml <<EOF
             services:
               med-doc:
                 image: ghcr.io/ydvakash/med-doc:${{ github.sha }}
@@ -178,6 +166,11 @@ jobs:
                 restart: unless-stopped
                 ports:
                   - "8080:8080"
+                environment:
+                  - SPRING_DATASOURCE_URL=${{ secrets.DB_URL }}
+                  - SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USERNAME }}
+                  - SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }}
+                  - JWT_SECRET=${{ secrets.JWT_SECRET }}
             EOF
       
             # -----------------------------------
