@@ -27,5 +27,11 @@ public class AuthController {
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, 201));
     }
+
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<med.com.dtos.response.LoginResponse>> login(@Valid @RequestBody med.com.dtos.request.LoginRequest request) {
+        med.com.dtos.response.LoginResponse response = authService.login(request);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 }
 
