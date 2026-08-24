@@ -12,4 +12,5 @@ public interface AuthService {
     LoginResponse login(LoginRequest request);
     profileDTO getProfile(String email);
     profileDTO updateProfile(String email, UpdateProfileRequest request);
+    profileDTO uploadProfilePicture(String email, org.springframework.web.multipart.MultipartFile file);
 }

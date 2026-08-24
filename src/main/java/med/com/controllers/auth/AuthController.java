@@ -1,5 +1,4 @@
 package med.com.controllers.auth;
-
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import med.com.dtos.request.LoginRequest;
@@ -56,5 +55,13 @@ public class AuthController {
         profileDTO updatedProfile = authService.updateProfile(principal.getName(), request);
         return ResponseEntity.ok(ApiResponse.success(updatedProfile));
     }
-}
 
+    @PostMapping(value = "/profile/picture", consumes = "multipart/form-data")
+    public ResponseEntity<ApiResponse<profileDTO>> uploadProfilePicture(
+            @org.springframework.web.bind.annotation.RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+            Principal principal
+    ) {
+        profileDTO updatedProfile = authService.uploadProfilePicture(principal.getName(), file);
+        return ResponseEntity.ok(ApiResponse.success(updatedProfile));
+    }
+}

@@ -12,8 +12,12 @@ import med.com.entity.UserEntity;
 import med.com.repository.UserRepository;
 import med.com.services.AuthService;
 import med.com.services.JwtService;
+import med.com.services.S3Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import java.util.UUID;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +26,9 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final S3Service s3Service;
+
+    private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of("image/jpeg", "image/jpg", "image/png");
 
     @Override
     public RegisterResponse register(RegisterRequest request) {
@@ -101,6 +108,40 @@ public class AuthServiceImpl implements AuthService {
         return mapToProfileDto(user);
     }
 
+    @Override
+    public profileDTO uploadProfilePicture(String email, MultipartFile file) {
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException("File cannot be empty");
+        }
+        if (!ALLOWED_IMAGE_TYPES.contains(file.getContentType())) {
+            throw new RuntimeException("Invalid file type. Only JPG and PNG are allowed");
+        }
+
+        // Delete old profile picture if exists and looks like an S3 key
+        if (user.getProfilePictureUrl() != null && !user.getProfilePictureUrl().startsWith("http")) {
+            try {
+                s3Service.deleteFile(user.getProfilePictureUrl());
+            } catch (Exception e) {
+                // Ignore if delete fails
+            }
+        }
+
+        String extension = file.getOriginalFilename() != null && file.getOriginalFilename().contains(".") 
+            ? file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf('.') + 1) 
+            : "jpg";
+            
+        String s3Key = "users/" + user.getId() + "/profile/" + UUID.randomUUID() + "." + extension;
+        s3Service.uploadFile(file, s3Key);
+
+        user.setProfilePictureUrl(s3Key);
+        userRepository.save(user);
+
+        return mapToProfileDto(user);
+    }
+
     private profileDTO mapToProfileDto(UserEntity user) {
         return profileDTO.builder()
                 .id(user.getId())
@@ -114,7 +155,20 @@ public class AuthServiceImpl implements AuthService {
                 .chronicConditions(user.getChronicConditions())
                 .allergies(user.getAllergies())
                 .dateOfBirth(user.getDateOfBirth())
-                .profilePictureUrl(user.getProfilePictureUrl())
+                .profilePictureUrl(getPresignedUrlOrRaw(user.getProfilePictureUrl()))
                 .build();
+    }
+
+    private String getPresignedUrlOrRaw(String urlOrKey) {
+        if (urlOrKey == null) return null;
+        if (urlOrKey.startsWith("http://") || urlOrKey.startsWith("https://")) {
+            return urlOrKey; // It's already a full URL
+        }
+        // Assume it's an S3 key
+        try {
+            return s3Service.getPresignedUrl(urlOrKey);
+        } catch (Exception e) {
+            return urlOrKey; // Fallback if S3 fails
+        }
     }
 }
