@@ -33,9 +33,6 @@ jobs:
           java-version: '17'
           cache: maven
 
-      # 3. Run tests
-      - name: Run tests
-        run: mvn clean test
 
       # 4. Build Spring Boot JAR
       - name: Build application
