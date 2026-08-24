@@ -65,18 +65,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "Token has expired. Please login again.");
         } catch (io.jsonwebtoken.JwtException e) {
             sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "Invalid token.");
+        } catch (org.springframework.security.core.userdetails.UsernameNotFoundException e) {
+            sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "User no longer exists. Please login again.");
         }
     }
 
     private void sendErrorResponse(HttpServletResponse response, int status, String message) throws IOException {
         response.setStatus(status);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        Map<String, Object> body = Map.of(
-                "success", false,
-                "data", null,
-                "error", message,
-                "status", status
-        );
+        java.util.Map<String, Object> body = new java.util.HashMap<>();
+        body.put("success", false);
+        body.put("data", null);
+        body.put("error", message);
+        body.put("status", status);
         response.getWriter().write(objectMapper.writeValueAsString(body));
     }
 }

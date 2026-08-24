@@ -35,6 +35,7 @@ public class GlobalExceptionHandler {
     // Handle all other generic Exceptions
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleGenericException(Exception ex) {
+        ex.printStackTrace(); // Log the error to console
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error(ex.getMessage(), 500));
