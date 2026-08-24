@@ -41,7 +41,7 @@ public class AnalysisResultEntity {
     @Column(columnDefinition = "TEXT")
     private String recommendations;
 
-    @Column(name = "full_analysis", columnDefinition = "JSONB")
+    @Column(name = "full_analysis", columnDefinition = "TEXT")
     private String fullAnalysis; // Complete response
 
     @Column(name = "analysis_tokens_used")
