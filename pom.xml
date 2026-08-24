@@ -99,6 +99,20 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- AWS S3 SDK v2 -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>2.25.60</version>
+        </dependency>
+
+        <!-- AWS Textract SDK v2 -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>textract</artifactId>
+            <version>2.25.60</version>
+        </dependency>
+
     </dependencies>
 
     <build>
