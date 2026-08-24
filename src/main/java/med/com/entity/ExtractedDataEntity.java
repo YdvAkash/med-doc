@@ -41,10 +41,10 @@ public class ExtractedDataEntity {
     @Column(name = "unit", length = 100)
     private String unit; // mg/dL, cells/μL, etc.
 
-    @Column(name = "reference_range_min")
+    @Column(name = "reference_range_min", columnDefinition = "DECIMAL(19, 2)")
     private BigDecimal referenceRangeMin;
 
-    @Column(name = "reference_range_max")
+    @Column(name = "reference_range_max", columnDefinition = "DECIMAL(19, 2)")
     private BigDecimal referenceRangeMax;
 
     @Column(name = "reference_range_text", length = 255)
