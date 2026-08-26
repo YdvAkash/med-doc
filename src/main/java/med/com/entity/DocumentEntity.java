@@ -66,6 +66,12 @@ public class DocumentEntity {
     @Column(name = "category", length = 100)
     private String category; // lab, prescription, imaging, vaccination, discharge, etc.
 
+    @Column(name = "title", length = 255)
+    private String title; // Smart, AI-extracted readable title
+
+    @Column(name = "tags", length = 500)
+    private String tags; // Comma-separated AI-extracted tags
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 
@@ -83,4 +89,16 @@ public class DocumentEntity {
 
     @OneToOne(mappedBy = "document", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private AnalysisResultEntity analysisResult;
+
+    @OneToMany(mappedBy = "relatedDocument", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
+    private java.util.List<TimelineEventEntity> timelineEvents = new java.util.ArrayList<>();
+
+    @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
+    private java.util.List<DocumentChunkEntity> documentChunks = new java.util.ArrayList<>();
+
+    @OneToMany(mappedBy = "relatedDocument", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
+    private java.util.List<ReminderEntity> reminders = new java.util.ArrayList<>();
 }

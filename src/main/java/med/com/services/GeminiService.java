@@ -61,4 +61,65 @@ public class GeminiService {
         }
         return "Sorry, I couldn't process your request.";
     }
+
+    @lombok.Data
+    public static class DocumentAnalysisResult {
+        private String title;
+        private java.util.List<String> tags;
+        private java.util.List<med.com.dtos.response.DocumentResponse.MetricDto> metrics;
+    }
+
+    public DocumentAnalysisResult extractDocumentMetadata(String rawText) {
+        String prompt = "You are a medical data extraction assistant. Parse the following OCR text from a medical report and extract the document title, relevant tags, and key health metrics (like Blood Sugar, HbA1c, Cholesterol, WBC, etc.).\n" +
+                "Return the results STRICTLY as a JSON object matching this format:\n" +
+                "{\n" +
+                "  \"title\": \"Complete Blood Count\", // A strict 2-3 word name indicating the exact report type (e.g., 'Complete Blood Count', 'X-Ray Chest', 'KFT Report'). Do NOT use long names or raw filenames.\n" +
+                "  \"tags\": [\"Dr. Lal PathLabs\", \"High Cholesterol\"], // Exactly 2 specific tags: Tag 1 = Name of the Hospital/Pathology Lab/Doctor. Tag 2 = The major medical finding or focus (e.g., 'High Cholesterol', 'Diabetes', 'Fracture'). Do NOT use generic tags like 'general' or 'medical report'.\n" +
+                "  \"metrics\": [\n" +
+                "    {\n" +
+                "      \"name\": \"Blood Sugar\",\n" +
+                "      \"value\": \"108\",\n" +
+                "      \"unit\": \"mg/dL\",\n" +
+                "      \"status\": \"normal\", // MUST BE exactly \"normal\" or \"attention\" based on standard medical ranges\n" +
+                "      \"icon\": \"water-drop\" // Provide a suitable MaterialIcon name (e.g., \"water-drop\", \"science\", \"monitor-heart\", \"favorite\", \"bloodtype\")\n" +
+                "    }\n" +
+                "  ]\n" +
+                "}\n" +
+                "Return ONLY the JSON object without any markdown formatting, backticks, or extra text.\n" +
+                "\n" +
+                "Raw Text:\n" +
+                rawText;
+
+        try {
+            GeminiChatRequest.Part part = new GeminiChatRequest.Part();
+            part.setText(prompt);
+            GeminiChatRequest.Content content = new GeminiChatRequest.Content();
+            content.setParts(java.util.Collections.singletonList(part));
+            content.setRole("user");
+            
+            GeminiChatRequest request = new GeminiChatRequest();
+            request.setContents(java.util.Collections.singletonList(content));
+
+            String responseText = generateChatResponse(request);
+
+            // Clean up possible markdown from LLM
+            responseText = responseText.trim();
+            if (responseText.startsWith("```json")) {
+                responseText = responseText.substring(7);
+            }
+            if (responseText.startsWith("```")) {
+                responseText = responseText.substring(3);
+            }
+            if (responseText.endsWith("```")) {
+                responseText = responseText.substring(0, responseText.length() - 3);
+            }
+            responseText = responseText.trim();
+
+            return objectMapper.readValue(responseText, DocumentAnalysisResult.class);
+
+        } catch (Exception e) {
+            log.error("Error extracting document metadata from text", e);
+            return new DocumentAnalysisResult();
+        }
+    }
 }

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Medical Summary</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm;
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 10pt;
+                color: #555;
+            }
+        }
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #333;
+            line-height: 1.5;
+            font-size: 12pt;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+            font-size: 24pt;
+        }
+        h2 {
+            color: #2980b9;
+            margin-top: 30px;
+            border-bottom: 1px solid #bdc3c7;
+            padding-bottom: 4px;
+            font-size: 16pt;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            margin-bottom: 25px;
+        }
+        th, td {
+            border: 1px solid #dddddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            color: #333;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .patient-info {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+        .patient-info p {
+            margin: 5px 0;
+        }
+        .bold {
+            font-weight: bold;
+        }
+        .badge-abnormal {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .badge-normal {
+            color: #27ae60;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Medical Summary</h1>
+
+    <div class="patient-info">
+        <p><span class="bold">Name:</span> <span th:text="${data.patientInfo.fullName}">John Doe</span></p>
+        <p><span class="bold">Date of Birth:</span> <span th:text="${data.patientInfo.dob}">1990-01-01</span></p>
+        <p><span class="bold">Blood Group:</span> <span th:text="${data.patientInfo.bloodGroup}">O+</span></p>
+        <p><span class="bold">Allergies:</span> 
+            <span th:if="${#lists.isEmpty(data.patientInfo.allergies)}">None reported</span>
+            <span th:unless="${#lists.isEmpty(data.patientInfo.allergies)}">
+                <span th:each="allergy, iterStat : ${data.patientInfo.allergies}">
+                    <span th:text="${allergy}">Allergy</span><span th:if="${!iterStat.last}">, </span>
+                </span>
+            </span>
+        </p>
+    </div>
+
+    <!-- Medical Conditions -->
+    <h2>Chronic Conditions</h2>
+    <div th:if="${#lists.isEmpty(data.medicalConditions)}">
+        <p>No chronic conditions reported.</p>
+    </div>
+    <table th:unless="${#lists.isEmpty(data.medicalConditions)}">
+        <thead>
+            <tr>
+                <th>Condition</th>
+                <th>Status</th>
+                <th>Diagnosed Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="condition : ${data.medicalConditions}">
+                <td th:text="${condition.condition}">Hypertension</td>
+                <td th:text="${condition.status}">Active</td>
+                <td th:text="${condition.diagnosedDate}">Unknown</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Current Medications -->
+    <h2>Current Medications</h2>
+    <div th:if="${#lists.isEmpty(data.currentMedications)}">
+        <p>No current medications on file.</p>
+    </div>
+    <table th:unless="${#lists.isEmpty(data.currentMedications)}">
+        <thead>
+            <tr>
+                <th>Medication Name</th>
+                <th>Dosage</th>
+                <th>Frequency</th>
+                <th>Prescribed Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="med : ${data.currentMedications}">
+                <td th:text="${med.name}">Aspirin</td>
+                <td th:text="${med.dosage}">10mg</td>
+                <td th:text="${med.frequency}">Daily</td>
+                <td th:text="${med.prescribedDate}">2023-01-01</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Test Results -->
+    <h2>Recent Test Results</h2>
+    <div th:if="${#lists.isEmpty(data.testResults)}">
+        <p>No test results available.</p>
+    </div>
+    <div th:unless="${#lists.isEmpty(data.testResults)}" th:each="test : ${data.testResults}">
+        <h3 th:text="${test.category} + ' (' + ${test.date} + ')'">Blood Test (2024-01-15)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Test Name</th>
+                    <th>Value</th>
+                    <th>Unit</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="metric : ${test.metrics}">
+                    <td th:text="${metric.testName}">HbA1c</td>
+                    <td th:text="${metric.value}">5.4</td>
+                    <td th:text="${metric.unit}">%</td>
+                    <td>
+                        <span th:text="${metric.status}" 
+                              th:class="${metric.status == 'Abnormal'} ? 'badge-abnormal' : 'badge-normal'">Normal</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Documents -->
+    <h2>Uploaded Documents</h2>
+    <div th:if="${#lists.isEmpty(data.documentList)}">
+        <p>No documents uploaded.</p>
+    </div>
+    <table th:unless="${#lists.isEmpty(data.documentList)}">
+        <thead>
+            <tr>
+                <th>Document ID</th>
+                <th>Type / Category</th>
+                <th>Date Added</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="doc : ${data.documentList}">
+                <td th:text="${doc.docId}">101</td>
+                <td th:text="${doc.docType}">MRI Scan</td>
+                <td th:text="${doc.dateAdded}">2023-08-20</td>
+            </tr>
+        </tbody>
+    </table>
+
+</body>
+</html>

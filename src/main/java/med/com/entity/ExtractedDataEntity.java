@@ -56,6 +56,12 @@ public class ExtractedDataEntity {
     @Column(name = "abnormality_type", length = 50)
     private String abnormalityType; // high, low, critical
 
+    @Column(name = "status", length = 50)
+    private String status; // "normal" or "attention"
+
+    @Column(name = "icon", length = 100)
+    private String icon; // MaterialIcon name
+
     @Column(name = "data_type", length = 50)
     private String dataType; // numeric, text, date
 
