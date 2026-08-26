@@ -18,5 +18,17 @@ public class DocumentResponse {
     private String processingStatus;
     private String category;
     private String notes;
+    private String title;
+    private java.util.List<String> tags;
     private String downloadUrl; // pre-signed URL, populated on GET single
+    private java.util.List<MetricDto> metrics;
+
+    @Data
+    public static class MetricDto {
+        private String name;
+        private String value;
+        private String unit;
+        private String status; // "normal" or "attention"
+        private String icon;   // MaterialIcon name
+    }
 }

@@ -22,9 +22,9 @@ public class TimelineService {
 
     public TimelineEventEntity createOrUpdateEventFromDocument(DocumentEntity document) {
         String eventType = inferEventType(document.getCategory());
-        String title = "Document Uploaded: " + document.getOriginalFilename();
-        if (document.getCategory() != null) {
-            title = document.getCategory() + " Document";
+        String title = document.getTitle();
+        if (title == null || title.trim().isEmpty()) {
+            title = document.getOriginalFilename();
         }
 
         TimelineEventEntity event = timelineEventRepository.findByRelatedDocumentId(document.getId())

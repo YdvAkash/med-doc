@@ -40,6 +40,8 @@ public class DocumentService {
     private final TimelineService timelineService;
     private final DateExtractionService dateExtractionService;
 
+    private final GeminiService geminiService;
+
     @Value("${aws.s3.bucket}")
     private String bucketName;
 
@@ -171,9 +173,29 @@ public class DocumentService {
     }
 
     private DocumentResponse toResponse(DocumentEntity doc, String downloadUrl) {
+        java.util.List<DocumentResponse.MetricDto> metrics = new java.util.ArrayList<>();
+        if (doc.getExtractedDataList() != null) {
+            for (med.com.entity.ExtractedDataEntity data : doc.getExtractedDataList()) {
+                DocumentResponse.MetricDto metric = new DocumentResponse.MetricDto();
+                metric.setName(data.getFieldName());
+                metric.setValue(data.getValue());
+                metric.setUnit(data.getUnit());
+                metric.setStatus(data.getStatus());
+                metric.setIcon(data.getIcon());
+                metrics.add(metric);
+            }
+        }
+
+        java.util.List<String> tagList = new java.util.ArrayList<>();
+        if (doc.getTags() != null && !doc.getTags().trim().isEmpty()) {
+            tagList = java.util.Arrays.asList(doc.getTags().split("\\s*,\\s*"));
+        }
+
         return DocumentResponse.builder()
                 .id(doc.getId())
                 .originalFilename(doc.getOriginalFilename())
+                .title(doc.getTitle())
+                .tags(tagList)
                 .fileSizeBytes(doc.getFileSizeBytes())
                 .fileType(doc.getFileType())
                 .uploadDate(doc.getUploadDate())
@@ -182,6 +204,7 @@ public class DocumentService {
                 .category(doc.getCategory())
                 .notes(doc.getNotes())
                 .downloadUrl(downloadUrl)
+                .metrics(metrics)
                 .build();
     }
 
@@ -210,6 +233,35 @@ public class DocumentService {
             List<DateCandidate> dates = dateExtractionService.extractDates(extractedText, doc.getCategory());
             if (!dates.isEmpty()) {
                 doc.setExtractedEventDate(dates.get(0).getDate());
+            }
+
+            // Extract metadata (title, tags) and metrics using Gemini API
+            GeminiService.DocumentAnalysisResult analysisResult = geminiService.extractDocumentMetadata(extractedText);
+            
+            if (analysisResult != null) {
+                if (analysisResult.getTitle() != null) {
+                    doc.setTitle(analysisResult.getTitle());
+                }
+                if (analysisResult.getTags() != null && !analysisResult.getTags().isEmpty()) {
+                    doc.setTags(String.join(", ", analysisResult.getTags()));
+                }
+                
+                java.util.List<DocumentResponse.MetricDto> metricsDtoList = analysisResult.getMetrics();
+                if (metricsDtoList != null && !metricsDtoList.isEmpty()) {
+                    java.util.List<med.com.entity.ExtractedDataEntity> extractedDataList = new java.util.ArrayList<>();
+                    for (DocumentResponse.MetricDto dto : metricsDtoList) {
+                        med.com.entity.ExtractedDataEntity data = med.com.entity.ExtractedDataEntity.builder()
+                                .document(doc)
+                                .fieldName(dto.getName())
+                                .value(dto.getValue())
+                                .unit(dto.getUnit())
+                                .status(dto.getStatus())
+                                .icon(dto.getIcon())
+                                .build();
+                        extractedDataList.add(data);
+                    }
+                    doc.setExtractedDataList(extractedDataList);
+                }
             }
 
             doc.setIsProcessed(true);

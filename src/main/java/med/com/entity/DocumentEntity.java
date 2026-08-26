@@ -66,6 +66,12 @@ public class DocumentEntity {
     @Column(name = "category", length = 100)
     private String category; // lab, prescription, imaging, vaccination, discharge, etc.
 
+    @Column(name = "title", length = 255)
+    private String title; // Smart, AI-extracted readable title
+
+    @Column(name = "tags", length = 500)
+    private String tags; // Comma-separated AI-extracted tags
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 
