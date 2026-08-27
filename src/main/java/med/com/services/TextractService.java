@@ -3,6 +3,7 @@ package med.com.services;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import med.com.exceptions.BaseException;
 import software.amazon.awssdk.services.textract.TextractClient;
 import software.amazon.awssdk.services.textract.model.Block;
 import software.amazon.awssdk.services.textract.model.DetectDocumentTextRequest;
@@ -52,7 +53,7 @@ public class TextractService {
 
         } catch (TextractException e) {
             log.error("Error extracting text from document: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to extract text using AWS Textract", e);
+            throw new BaseException("TEXTRACT_FAILED", "Failed to analyze document text.");
         }
     }
 }

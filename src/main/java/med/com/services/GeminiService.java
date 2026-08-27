@@ -101,6 +101,11 @@ public class GeminiService {
             request.setContents(java.util.Collections.singletonList(content));
 
             String responseText = generateChatResponse(request);
+            
+            if (responseText.startsWith("Sorry")) {
+                log.warn("Gemini API failed (possibly quota exceeded), skipping metadata extraction.");
+                return new DocumentAnalysisResult();
+            }
 
             // Clean up possible markdown from LLM
             responseText = responseText.trim();

@@ -8,6 +8,7 @@ import med.com.dtos.response.ChatMessageResponse;
 import med.com.entity.ChatHistoryEntity;
 import med.com.entity.DocumentEntity;
 import med.com.entity.UserEntity;
+import med.com.exceptions.ResourceNotFoundException;
 import med.com.repository.ChatHistoryRepository;
 import med.com.repository.DocumentRepository;
 import med.com.repository.UserRepository;
@@ -36,7 +37,7 @@ public class ChatService {
     @Transactional
     public ChatMessageResponse askQuestion(String email, ChatRequest request) {
         UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User profile not found."));
 
         // 1. Fetch ALL user's documents that have extracted text
         Page<DocumentEntity> docsPage = documentRepository.findByUserId(
@@ -131,7 +132,7 @@ public class ChatService {
 
     public Page<ChatMessageResponse> getChatHistory(String email, int page, int size) {
         UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User profile not found."));
 
         return chatHistoryRepository.findByUserIdOrderByCreatedAtDesc(user.getId(), PageRequest.of(page, size))
                 .map(msg -> ChatMessageResponse.builder()

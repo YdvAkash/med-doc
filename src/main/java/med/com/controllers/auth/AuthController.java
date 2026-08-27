@@ -7,6 +7,9 @@ import med.com.dtos.request.UpdateProfileRequest;
 import med.com.dtos.response.ApiResponse;
 import med.com.dtos.response.LoginResponse;
 import med.com.dtos.response.RegisterResponse;
+import med.com.dtos.request.VerifyOtpRequest;
+import med.com.dtos.request.ForgotPasswordRequest;
+import med.com.dtos.request.ResetPasswordRequest;
 import med.com.dtos.response.profileDTO;
 import med.com.services.AuthService;
 import org.springframework.http.HttpStatus;
@@ -41,6 +44,24 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    @PostMapping("/verify-registration")
+    public ResponseEntity<ApiResponse<String>> verifyRegistration(@Valid @RequestBody VerifyOtpRequest request) {
+        authService.verifyRegistration(request);
+        return ResponseEntity.ok(ApiResponse.success("Account verified successfully"));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request);
+        return ResponseEntity.ok(ApiResponse.success("OTP sent to your email"));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<String>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.success("Password reset successfully"));
+    }
+
     @GetMapping("/profile")
     public ResponseEntity<ApiResponse<profileDTO>> getProfile(Principal principal) {
         profileDTO profile = authService.getProfile(principal.getName());
@@ -50,7 +71,7 @@ public class AuthController {
     @PutMapping("/profile")
     public ResponseEntity<ApiResponse<profileDTO>> updateProfile(
             Principal principal,
-            @RequestBody UpdateProfileRequest request
+            @Valid @RequestBody UpdateProfileRequest request
     ) {
         profileDTO updatedProfile = authService.updateProfile(principal.getName(), request);
         return ResponseEntity.ok(ApiResponse.success(updatedProfile));

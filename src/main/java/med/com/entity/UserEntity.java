@@ -66,7 +66,7 @@ public class UserEntity {
 
     @Builder.Default
     @Column(name = "is_active", nullable = false)
-    private Boolean isActive = true;
+    private Boolean isActive = false;
 
     @Column(name = "profile_picture_url", length = 500)
     private String profilePictureUrl;
