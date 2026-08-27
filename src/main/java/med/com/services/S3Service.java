@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import med.com.exceptions.BaseException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
@@ -46,7 +47,7 @@ public class S3Service {
             return s3Key;
         } catch (IOException e) {
             log.error("Failed to upload file to S3: {}", s3Key, e);
-            throw new RuntimeException("Failed to upload file to S3", e);
+            throw new BaseException("S3_UPLOAD_FAILED", "Failed to upload file. Please try again.");
         }
     }
 

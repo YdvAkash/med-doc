@@ -6,6 +6,8 @@ import med.com.dtos.response.DocumentResponse;
 import med.com.dtos.response.DateCandidate;
 import med.com.entity.DocumentEntity;
 import med.com.entity.UserEntity;
+import med.com.exceptions.BadRequestException;
+import med.com.exceptions.ResourceNotFoundException;
 import med.com.repository.DocumentRepository;
 import med.com.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +15,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
@@ -45,6 +49,10 @@ public class DocumentService {
     @Value("${aws.s3.bucket}")
     private String bucketName;
 
+    @Autowired
+    @Lazy
+    private DocumentService self;
+
     // -----------------------------------------------------------------------
     // Upload
     // -----------------------------------------------------------------------
@@ -52,7 +60,7 @@ public class DocumentService {
         validateFile(file);
 
         UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User profile not found."));
 
         // Generate a unique S3 key: users/{userId}/docs/{uuid}_{originalFilename}
         String extension = getExtension(file.getOriginalFilename());
@@ -74,7 +82,7 @@ public class DocumentService {
         log.info("Document saved to DB with id={} for user={}", saved.getId(), email);
 
         // Trigger asynchronous OCR processing
-        processDocumentAsync(saved.getId());
+        self.processDocumentAsync(saved.getId());
 
         return toResponse(saved, null);
     }
@@ -84,7 +92,7 @@ public class DocumentService {
     // -----------------------------------------------------------------------
     public Page<DocumentResponse> listDocuments(String email, String search, String category, Pageable pageable) {
         UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User profile not found."));
 
         return documentRepository.findByUserIdWithFilters(user.getId(), search, category, pageable)
                 .map(doc -> toResponse(doc, null));
@@ -95,10 +103,10 @@ public class DocumentService {
     // -----------------------------------------------------------------------
     public DocumentResponse getDocument(Long documentId, String email) {
         UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User profile not found."));
 
         DocumentEntity doc = documentRepository.findByIdAndUserId(documentId, user.getId())
-                .orElseThrow(() -> new RuntimeException("Document not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("DOCUMENT_NOT_FOUND", "The requested document was not found."));
 
         String presignedUrl = s3Service.getPresignedUrl(doc.getFileS3Path());
         return toResponse(doc, presignedUrl);
@@ -109,10 +117,10 @@ public class DocumentService {
     // -----------------------------------------------------------------------
     public void deleteDocument(Long documentId, String email) {
         UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User profile not found."));
 
         DocumentEntity doc = documentRepository.findByIdAndUserId(documentId, user.getId())
-                .orElseThrow(() -> new RuntimeException("Document not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("DOCUMENT_NOT_FOUND", "The requested document was not found."));
 
         s3Service.deleteFile(doc.getFileS3Path());
         documentRepository.delete(doc);
@@ -124,10 +132,10 @@ public class DocumentService {
     // -----------------------------------------------------------------------
     public String getRawText(Long documentId, String email) {
         UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User profile not found."));
 
         DocumentEntity doc = documentRepository.findByIdAndUserId(documentId, user.getId())
-                .orElseThrow(() -> new RuntimeException("Document not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("DOCUMENT_NOT_FOUND", "The requested document was not found."));
 
         return doc.getRawText();
     }
@@ -137,10 +145,10 @@ public class DocumentService {
     // -----------------------------------------------------------------------
     public DocumentResponse confirmDate(Long documentId, LocalDate extractedEventDate, String email) {
         UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User profile not found."));
 
         DocumentEntity doc = documentRepository.findByIdAndUserId(documentId, user.getId())
-                .orElseThrow(() -> new RuntimeException("Document not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("DOCUMENT_NOT_FOUND", "The requested document was not found."));
 
         doc.setExtractedEventDate(extractedEventDate);
         DocumentEntity savedDoc = documentRepository.save(doc);
@@ -156,14 +164,14 @@ public class DocumentService {
     // -----------------------------------------------------------------------
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new RuntimeException("File cannot be empty");
+            throw new BadRequestException("FILE_EMPTY", "File cannot be empty.");
         }
         if (file.getSize() > MAX_FILE_SIZE_BYTES) {
-            throw new RuntimeException("File size exceeds the 10MB limit");
+            throw new BadRequestException("FILE_TOO_LARGE", "File size exceeds the 10MB limit.");
         }
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
-            throw new RuntimeException("Invalid file type. Only PDF, JPG, and PNG are allowed");
+            throw new BadRequestException("INVALID_FILE_TYPE", "Invalid file type. Only PDF, JPG, and PNG are allowed.");
         }
     }
 

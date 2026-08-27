@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import med.com.dtos.response.MedicalSummaryResponse;
 import med.com.dtos.response.MedicalSummaryResponse.*;
 import med.com.entity.*;
+import med.com.exceptions.ResourceNotFoundException;
 import med.com.repository.DocumentRepository;
 import med.com.repository.TimelineEventRepository;
 import med.com.repository.UserRepository;
@@ -33,7 +34,7 @@ public class MedicalSummaryService {
 
     public MedicalSummaryResponse getMedicalSummary(String email) {
         UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User profile not found."));
 
         // 1. Patient Info
         PatientInfoDTO patientInfo = PatientInfoDTO.builder()

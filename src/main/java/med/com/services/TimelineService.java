@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import med.com.entity.DocumentEntity;
 import med.com.entity.TimelineEventEntity;
 import med.com.entity.UserEntity;
+import med.com.exceptions.ResourceNotFoundException;
 import med.com.repository.TimelineEventRepository;
 import med.com.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -41,13 +42,13 @@ public class TimelineService {
             event.setSeverity("normal");
         }
 
-        log.info("Saving timeline event for user={} with date={}", document.getUser().getEmail(), event.getEventDate());
+        log.info("Saving timeline event for documentId={} with date={}", document.getId(), event.getEventDate());
         return timelineEventRepository.save(event);
     }
 
     public List<TimelineEventEntity> getTimeline(String email, LocalDate startDate, LocalDate endDate, String eventType) {
         UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User profile not found."));
 
         // Simplistic approach for now: grab all, sort, and filter
         // A better approach would be to use Spring Data JPA Specifications

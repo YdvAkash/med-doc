@@ -13,4 +13,8 @@ public interface AuthService {
     profileDTO getProfile(String email);
     profileDTO updateProfile(String email, UpdateProfileRequest request);
     profileDTO uploadProfilePicture(String email, org.springframework.web.multipart.MultipartFile file);
+    
+    void verifyRegistration(med.com.dtos.request.VerifyOtpRequest request);
+    void forgotPassword(med.com.dtos.request.ForgotPasswordRequest request);
+    void resetPassword(med.com.dtos.request.ResetPasswordRequest request);
 }
