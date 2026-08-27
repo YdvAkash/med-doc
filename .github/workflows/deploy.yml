@@ -179,6 +179,12 @@ jobs:
                   - SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE=10MB
                   - SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE=10MB
                   - GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+                  - SPRING_MAIL_HOST=smtp.gmail.com
+                  - SPRING_MAIL_PORT=587
+                  - SPRING_MAIL_USERNAME=${{ secrets.SPRING_MAIL_USERNAME }}
+                  - SPRING_MAIL_PASSWORD=${{ secrets.SPRING_MAIL_PASSWORD }}
+                  - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true
+                  - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true
             EOF
       
             # -----------------------------------
