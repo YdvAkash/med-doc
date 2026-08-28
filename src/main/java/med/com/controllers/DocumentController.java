@@ -118,4 +118,31 @@ public class DocumentController {
         DocumentResponse response = documentService.confirmDate(id, request.getExtractedEventDate(), principal.getName());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+    /**
+     * POST /api/documents/{id}/summary
+     * Generates and saves an AI summary for the document.
+     */
+    @PostMapping("/{id}/summary")
+    public ResponseEntity<ApiResponse<String>> generateSummary(
+            @PathVariable Long id,
+            Principal principal
+    ) {
+        String summary = documentService.generateDoctorSummary(id, principal.getName());
+        return ResponseEntity.ok(ApiResponse.success(summary));
+    }
+
+    /**
+     * POST /api/documents/{id}/translate?lang={language}
+     * Translates the document summary and metrics.
+     */
+    @PostMapping("/{id}/translate")
+    public ResponseEntity<ApiResponse<DocumentResponse>> translateDocument(
+            @PathVariable Long id,
+            @RequestParam String lang,
+            Principal principal
+    ) {
+        DocumentResponse response = documentService.translateDocument(id, lang, principal.getName());
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 }

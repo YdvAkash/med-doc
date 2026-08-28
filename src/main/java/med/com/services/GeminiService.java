@@ -127,4 +127,62 @@ public class GeminiService {
             return new DocumentAnalysisResult();
         }
     }
+
+    public String generateSummary(String rawText) {
+        String prompt = "You are a medical doctor. Read the following OCR text from a patient's medical report and write a clear, easy-to-understand summary. Explain what the report is for, highlight any abnormal findings, and explain what they mean in simple terms so the patient can easily understand their health status. Keep the summary concise but informative (around 3-4 sentences).\n\n" +
+                "Raw Text:\n" +
+                rawText;
+
+        try {
+            GeminiChatRequest.Part part = new GeminiChatRequest.Part();
+            part.setText(prompt);
+            GeminiChatRequest.Content content = new GeminiChatRequest.Content();
+            content.setParts(java.util.Collections.singletonList(part));
+            content.setRole("user");
+            
+            GeminiChatRequest request = new GeminiChatRequest();
+            request.setContents(java.util.Collections.singletonList(content));
+
+            String responseText = generateChatResponse(request);
+            
+            if (responseText.startsWith("Sorry")) {
+                log.warn("Gemini API failed to generate summary.");
+                return "We could not generate a summary at this time. Please review the raw report or consult your doctor.";
+            }
+
+            return responseText.trim();
+        } catch (Exception e) {
+            log.error("Error generating document summary from text", e);
+            return "An error occurred while generating the summary.";
+        }
+    }
+
+    public String translateText(String textToTranslate, String targetLanguage) {
+        String prompt = "You are a professional medical translator. Translate the following text into " + targetLanguage + ". Ensure that medical terminology is accurate and the tone remains professional. Return ONLY the translated text.\n\n" +
+                "Text to translate:\n" +
+                textToTranslate;
+
+        try {
+            GeminiChatRequest.Part part = new GeminiChatRequest.Part();
+            part.setText(prompt);
+            GeminiChatRequest.Content content = new GeminiChatRequest.Content();
+            content.setParts(java.util.Collections.singletonList(part));
+            content.setRole("user");
+            
+            GeminiChatRequest request = new GeminiChatRequest();
+            request.setContents(java.util.Collections.singletonList(content));
+
+            String responseText = generateChatResponse(request);
+            
+            if (responseText.startsWith("Sorry")) {
+                log.warn("Gemini API failed to translate text.");
+                return textToTranslate; // Fallback to original text
+            }
+
+            return responseText.trim();
+        } catch (Exception e) {
+            log.error("Error translating text", e);
+            return textToTranslate;
+        }
+    }
 }

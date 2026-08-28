@@ -21,6 +21,7 @@ public class DocumentResponse {
     private String title;
     private java.util.List<String> tags;
     private String downloadUrl; // pre-signed URL, populated on GET single
+    private String summary; // Doctor's summary
     private java.util.List<MetricDto> metrics;
 
     @Data
