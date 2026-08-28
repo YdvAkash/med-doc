@@ -198,6 +198,11 @@ public class DocumentService {
         if (doc.getTags() != null && !doc.getTags().trim().isEmpty()) {
             tagList = java.util.Arrays.asList(doc.getTags().split("\\s*,\\s*"));
         }
+        
+        String summary = null;
+        if (doc.getAnalysisResult() != null) {
+            summary = doc.getAnalysisResult().getSummary();
+        }
 
         return DocumentResponse.builder()
                 .id(doc.getId())
@@ -212,8 +217,70 @@ public class DocumentService {
                 .category(doc.getCategory())
                 .notes(doc.getNotes())
                 .downloadUrl(downloadUrl)
+                .summary(summary)
                 .metrics(metrics)
                 .build();
+    }
+
+    // -----------------------------------------------------------------------
+    // AI Summary Generation
+    // -----------------------------------------------------------------------
+    public String generateDoctorSummary(Long documentId, String email) {
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User profile not found."));
+
+        DocumentEntity doc = documentRepository.findByIdAndUserId(documentId, user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("DOCUMENT_NOT_FOUND", "The requested document was not found."));
+
+        if (doc.getRawText() == null || doc.getRawText().trim().isEmpty()) {
+            throw new BadRequestException("NO_TEXT", "Document does not have extracted text to summarize yet.");
+        }
+
+        String summary = geminiService.generateSummary(doc.getRawText());
+
+        med.com.entity.AnalysisResultEntity analysisResult = doc.getAnalysisResult();
+        if (analysisResult == null) {
+            analysisResult = med.com.entity.AnalysisResultEntity.builder()
+                    .document(doc)
+                    .analysisType("single_document")
+                    .build();
+        }
+        
+        analysisResult.setSummary(summary);
+        doc.setAnalysisResult(analysisResult);
+        documentRepository.save(doc); // Cascades save to AnalysisResultEntity
+
+        return summary;
+    }
+
+    public DocumentResponse translateDocument(Long documentId, String language, String email) {
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User profile not found."));
+
+        DocumentEntity doc = documentRepository.findByIdAndUserId(documentId, user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("DOCUMENT_NOT_FOUND", "The requested document was not found."));
+
+        DocumentResponse response = toResponse(doc, null); // Re-use the existing logic to build the base DTO
+        
+        // Translate Summary
+        if (response.getSummary() != null && !response.getSummary().isEmpty()) {
+            String translatedSummary = geminiService.translateText(response.getSummary(), language);
+            response.setSummary(translatedSummary);
+        }
+
+        // Translate Metric names and statuses
+        if (response.getMetrics() != null && !response.getMetrics().isEmpty()) {
+            for (DocumentResponse.MetricDto metric : response.getMetrics()) {
+                if (metric.getName() != null) {
+                    metric.setName(geminiService.translateText(metric.getName(), language));
+                }
+                if (metric.getStatus() != null && !metric.getStatus().isEmpty()) {
+                    metric.setStatus(geminiService.translateText(metric.getStatus(), language));
+                }
+            }
+        }
+
+        return response;
     }
 
     // -----------------------------------------------------------------------
