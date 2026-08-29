@@ -185,6 +185,8 @@ jobs:
                   - SPRING_MAIL_PASSWORD=${{ secrets.SPRING_MAIL_PASSWORD }}
                   - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true
                   - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true
+                  - RAZORPAY_KEY_ID=${{ secrets.RAZORPAY_KEY_ID }}
+                  - RAZORPAY_KEY_SECRET=${{ secrets.RAZORPAY_KEY_SECRET }}
             EOF
       
             # -----------------------------------
