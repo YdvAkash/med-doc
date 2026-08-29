@@ -17,13 +17,23 @@ import java.security.Principal;
 public class ChatController {
 
     private final ChatService chatService;
+    private final med.com.services.SubscriptionService subscriptionService;
+    private final med.com.repository.UserRepository userRepository;
 
     @PostMapping("/ask")
-    public ResponseEntity<ApiResponse<ChatMessageResponse>> askQuestion(
+    public ResponseEntity<?> askQuestion(
             @RequestBody ChatRequest request,
             Principal principal
     ) {
+        med.com.entity.UserEntity user = userRepository.findByEmail(principal.getName()).orElseThrow();
+        if (!subscriptionService.canChat(user)) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN)
+                    .body(java.util.Map.of("success", false, "message", "Monthly quota is completed, you need to upgrade your account."));
+        }
+
         ChatMessageResponse response = chatService.askQuestion(principal.getName(), request);
+        subscriptionService.incrementChatCount(user);
+
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

@@ -20,4 +20,5 @@ public class profileDTO {
     private String allergies;
     private LocalDate dateOfBirth;
     private String profilePictureUrl;
+    private String subscriptionTier;
 }

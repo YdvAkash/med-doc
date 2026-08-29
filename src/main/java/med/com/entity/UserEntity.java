@@ -70,4 +70,22 @@ public class UserEntity {
 
     @Column(name = "profile_picture_url", length = 500)
     private String profilePictureUrl;
+
+    @Column(name = "subscription_tier", length = 20)
+    @Builder.Default
+    private String subscriptionTier = "FREE";
+
+    @Column(name = "reports_uploaded_this_week")
+    @Builder.Default
+    private Integer reportsUploadedThisWeek = 0;
+
+    @Column(name = "chats_this_week")
+    @Builder.Default
+    private Integer chatsThisWeek = 0;
+
+    @Column(name = "limit_reset_date")
+    private LocalDate limitResetDate; // Used for documents
+
+    @Column(name = "chat_limit_reset_date")
+    private LocalDate chatLimitResetDate;
 }
