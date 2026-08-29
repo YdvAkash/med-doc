@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/documents")
@@ -25,17 +26,27 @@ public class DocumentController {
 
     private final DocumentService documentService;
     private final DateExtractionService dateExtractionService;
+    private final med.com.services.SubscriptionService subscriptionService;
+    private final med.com.repository.UserRepository userRepository;
 
     /**
      * POST /api/documents/upload
      * Accepts multipart/form-data with a "file" field.
      */
     @PostMapping(value = "/upload", consumes = "multipart/form-data")
-    public ResponseEntity<ApiResponse<DocumentResponse>> upload(
+    public ResponseEntity<?> upload(
             @RequestParam("file") MultipartFile file,
             Principal principal
     ) {
+        med.com.entity.UserEntity user = userRepository.findByEmail(principal.getName()).orElseThrow();
+        if (!subscriptionService.canUploadDocument(user)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("success", false, "message", "Monthly quota is completed, you need to upgrade your account."));
+        }
+
         DocumentResponse response = documentService.uploadDocument(file, principal.getName());
+        subscriptionService.incrementUploadCount(user);
+        
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, 201));

@@ -302,6 +302,14 @@ public class DocumentService {
 
             String extractedText = textractService.extractTextFromS3(bucketName, doc.getFileS3Path());
 
+            if (extractedText == null || extractedText.trim().length() < 10) {
+                log.warn("Document {} rejected as no meaningful text was found.", documentId);
+                doc.setProcessingStatus("failed");
+                doc.setNotes("No text was found in the uploaded image. Please ensure the document is clear and readable.");
+                documentRepository.save(doc);
+                return;
+            }
+
             doc.setRawText(extractedText);
             
             // Automatically extract date
@@ -314,6 +322,14 @@ public class DocumentService {
             GeminiService.DocumentAnalysisResult analysisResult = geminiService.extractDocumentMetadata(extractedText);
             
             if (analysisResult != null) {
+                if ("Unknown Document".equalsIgnoreCase(analysisResult.getTitle())) {
+                    log.warn("Document {} rejected by AI as it does not appear to be a medical report.", documentId);
+                    doc.setProcessingStatus("failed");
+                    doc.setNotes("The uploaded image does not appear to be a valid medical report. Please upload a clear photo of your document.");
+                    documentRepository.save(doc);
+                    return;
+                }
+                
                 if (analysisResult.getTitle() != null) {
                     doc.setTitle(analysisResult.getTitle());
                 }

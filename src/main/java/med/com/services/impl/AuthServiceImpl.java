@@ -127,6 +127,7 @@ public class AuthServiceImpl implements AuthService {
                 .email(user.getEmail())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
+                .subscriptionTier(user.getSubscriptionTier())
                 .build();
 
         return LoginResponse.builder()
@@ -211,6 +212,7 @@ public class AuthServiceImpl implements AuthService {
                 .chronicConditions(user.getChronicConditions())
                 .allergies(user.getAllergies())
                 .dateOfBirth(user.getDateOfBirth())
+                .subscriptionTier(user.getSubscriptionTier())
                 .profilePictureUrl(getPresignedUrlOrRaw(user.getProfilePictureUrl()))
                 .build();
     }

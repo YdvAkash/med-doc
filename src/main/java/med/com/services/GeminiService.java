@@ -71,17 +71,19 @@ public class GeminiService {
 
     public DocumentAnalysisResult extractDocumentMetadata(String rawText) {
         String prompt = "You are a medical data extraction assistant. Parse the following OCR text from a medical report and extract the document title, relevant tags, and key health metrics (like Blood Sugar, HbA1c, Cholesterol, WBC, etc.).\n" +
+                "IMPORTANT: If the text does NOT appear to be a valid medical report (e.g. a random photo or selfie) or is extremely short, return the title as 'Unknown Document' and do not extract any tags or metrics.\n" +
+                "CRITICAL INSTRUCTION: DO NOT hallucinate. ONLY use actual values, names, or metrics found in the raw text. Do NOT use placeholder examples (like 'Dr. Lal PathLabs') if they are not in the text.\n" +
                 "Return the results STRICTLY as a JSON object matching this format:\n" +
                 "{\n" +
-                "  \"title\": \"Complete Blood Count\", // A strict 2-3 word name indicating the exact report type (e.g., 'Complete Blood Count', 'X-Ray Chest', 'KFT Report'). Do NOT use long names or raw filenames.\n" +
-                "  \"tags\": [\"Dr. Lal PathLabs\", \"High Cholesterol\"], // Exactly 2 specific tags: Tag 1 = Name of the Hospital/Pathology Lab/Doctor. Tag 2 = The major medical finding or focus (e.g., 'High Cholesterol', 'Diabetes', 'Fracture'). Do NOT use generic tags like 'general' or 'medical report'.\n" +
+                "  \"title\": \"Complete Blood Count\", // A strict 2-3 word name indicating the exact report type. If not a medical report, return 'Unknown Document'.\n" +
+                "  \"tags\": [\"Hospital/Lab Name\", \"Major Finding\"], // Up to 2 specific tags ACTUALLY FOUND in the text. Leave empty array [] if none found.\n" +
                 "  \"metrics\": [\n" +
                 "    {\n" +
-                "      \"name\": \"Blood Sugar\",\n" +
+                "      \"name\": \"Blood Sugar\", // Only include if found in text\n" +
                 "      \"value\": \"108\",\n" +
                 "      \"unit\": \"mg/dL\",\n" +
                 "      \"status\": \"normal\", // MUST BE exactly \"normal\" or \"attention\" based on standard medical ranges\n" +
-                "      \"icon\": \"water-drop\" // Provide a suitable MaterialIcon name (e.g., \"water-drop\", \"science\", \"monitor-heart\", \"favorite\", \"bloodtype\")\n" +
+                "      \"icon\": \"water-drop\" // Provide a suitable MaterialIcon name\n" +
                 "    }\n" +
                 "  ]\n" +
                 "}\n" +
