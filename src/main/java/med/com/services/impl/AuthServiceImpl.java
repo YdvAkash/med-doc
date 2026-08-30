@@ -283,4 +283,12 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
         otpRepository.delete(otpEntity);
     }
+
+    @Override
+    public void updatePushToken(String email, String token) {
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User account not found."));
+        user.setPushToken(token);
+        userRepository.save(user);
+    }
 }

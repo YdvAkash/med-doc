@@ -88,4 +88,7 @@ public class UserEntity {
 
     @Column(name = "chat_limit_reset_date")
     private LocalDate chatLimitResetDate;
+
+    @Column(name = "push_token", length = 255)
+    private String pushToken;
 }

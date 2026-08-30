@@ -85,4 +85,14 @@ public class AuthController {
         profileDTO updatedProfile = authService.uploadProfilePicture(principal.getName(), file);
         return ResponseEntity.ok(ApiResponse.success(updatedProfile));
     }
+
+    @PutMapping("/profile/push-token")
+    public ResponseEntity<ApiResponse<String>> updatePushToken(
+            Principal principal,
+            @RequestBody java.util.Map<String, String> request
+    ) {
+        String token = request.get("token");
+        authService.updatePushToken(principal.getName(), token);
+        return ResponseEntity.ok(ApiResponse.success("Push token updated successfully"));
+    }
 }
