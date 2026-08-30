@@ -17,4 +17,5 @@ public interface AuthService {
     void verifyRegistration(med.com.dtos.request.VerifyOtpRequest request);
     void forgotPassword(med.com.dtos.request.ForgotPasswordRequest request);
     void resetPassword(med.com.dtos.request.ResetPasswordRequest request);
+    void updatePushToken(String email, String token);
 }

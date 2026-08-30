@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mediva Admin - Push Notifications</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            width: 100%;
+            max-width: 500px;
+        }
+        h2 {
+            margin-top: 0;
+            color: #1e293b;
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        p {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #334155;
+            font-size: 14px;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+            color: #0f172a;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        textarea {
+            resize: vertical;
+            height: 100px;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: #1C75D5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #155bb5;
+        }
+        button:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 8px;
+            display: none;
+            font-size: 14px;
+        }
+        .success {
+            background-color: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        .error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Send Push Notification</h2>
+    <p>Broadcast a message to all Mediva users.</p>
+
+    <div class="form-group">
+        <label for="title">Notification Title</label>
+        <input type="text" id="title" placeholder="e.g. New Update Available!">
+    </div>
+
+    <div class="form-group">
+        <label for="message">Message Body</label>
+        <textarea id="message" placeholder="e.g. Check out the latest features in Mediva."></textarea>
+    </div>
+
+    <button id="sendBtn" onclick="sendNotification()">Send Notification</button>
+
+    <div id="status"></div>
+</div>
+
+<script>
+    async function sendNotification() {
+        const title = document.getElementById('title').value.trim();
+        const message = document.getElementById('message').value.trim();
+        const statusDiv = document.getElementById('status');
+        const sendBtn = document.getElementById('sendBtn');
+
+        if (!title || !message) {
+            showStatus('Please enter both title and message.', 'error');
+            return;
+        }
+
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Sending...';
+        statusDiv.style.display = 'none';
+
+        try {
+            const response = await fetch('http://localhost:8080/api/admin/notifications/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ title, message })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showStatus(data.message || 'Notification sent successfully!', 'success');
+                document.getElementById('title').value = '';
+                document.getElementById('message').value = '';
+            } else {
+                showStatus(data.error || 'Failed to send notification.', 'error');
+            }
+        } catch (error) {
+            showStatus('An error occurred while sending the notification.', 'error');
+        } finally {
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Send Notification';
+        }
+    }
+
+    function showStatus(text, type) {
+        const statusDiv = document.getElementById('status');
+        statusDiv.textContent = text;
+        statusDiv.className = type;
+        statusDiv.style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
