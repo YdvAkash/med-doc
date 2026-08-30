@@ -139,7 +139,7 @@
         statusDiv.style.display = 'none';
 
         try {
-            const response = await fetch('http://localhost:8080/api/admin/notifications/send', {
+            const response = await fetch('/api/admin/notifications/send', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
