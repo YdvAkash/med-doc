@@ -150,6 +150,7 @@
             const data = await response.json();
 
             if (response.ok && data.success) {
+                console.log("Full Expo Response:", data.expoResponse);
                 showStatus(data.message || 'Notification sent successfully!', 'success');
                 document.getElementById('title').value = '';
                 document.getElementById('message').value = '';
