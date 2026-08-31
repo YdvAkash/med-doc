@@ -213,6 +213,8 @@ public class AuthServiceImpl implements AuthService {
                 .allergies(user.getAllergies())
                 .dateOfBirth(user.getDateOfBirth())
                 .subscriptionTier(user.getSubscriptionTier())
+                .reportsUploadedThisWeek(user.getReportsUploadedThisWeek())
+                .chatsThisWeek(user.getChatsThisWeek())
                 .profilePictureUrl(getPresignedUrlOrRaw(user.getProfilePictureUrl()))
                 .build();
     }

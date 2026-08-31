@@ -1,9 +1,11 @@
 package med.com.services;
 
+import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -31,6 +33,33 @@ public class EmailService {
             log.info("OTP Email sent successfully to {}", toEmail);
         } catch (Exception e) {
             log.error("Error sending OTP email to {}", toEmail, e);
+        }
+    }
+
+    public void sendSubscriptionSuccessEmail(String toEmail, String name, String plan) {
+        try {
+            MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "utf-8");
+
+            String htmlMsg = "<div style=\"font-family: Arial, sans-serif; text-align: center; color: #333;\">" +
+                    "<h2 style=\"color: #0d6efd;\">Welcome to the " + plan + " Plan!</h2>" +
+                    "<p>Hi <b>" + name + "</b>,</p>" +
+                    "<p>Thank you for upgrading your Mediva subscription. We are thrilled to have you on board!</p>" +
+                    "<p>You now have access to premium features designed to give you the best experience.</p>" +
+                    "<br>" +
+                    "<p>Stay healthy,</p>" +
+                    "<p><b>The Mediva Team</b></p>" +
+                    "</div>";
+
+            helper.setText(htmlMsg, true);
+            helper.setTo(toEmail);
+            helper.setSubject("Mediva - Subscription Successful!");
+            helper.setFrom("officeakashyadav@gmail.com");
+
+            javaMailSender.send(mimeMessage);
+            log.info("Subscription Email sent successfully to {}", toEmail);
+        } catch (Exception e) {
+            log.error("Error sending Subscription email to {}", toEmail, e);
         }
     }
 }

@@ -17,13 +17,16 @@ public class SubscriptionService {
     private final UserRepository userRepository;
     private final RazorpayClient razorpayClient;
     private final String razorpaySecret;
+    private final EmailService emailService;
 
     public SubscriptionService(
             UserRepository userRepository,
+            EmailService emailService,
             @Value("${razorpay.key.id}") String razorpayKeyId,
             @Value("${razorpay.key.secret}") String razorpaySecret
     ) throws Exception {
         this.userRepository = userRepository;
+        this.emailService = emailService;
         this.razorpaySecret = razorpaySecret;
         // Handle placeholder values for development
         if ("YOUR_RAZORPAY_KEY_ID".equals(razorpayKeyId) || "YOUR_RAZORPAY_KEY_SECRET".equals(razorpaySecret)) {
@@ -69,6 +72,10 @@ public class SubscriptionService {
         user.setLimitResetDate(LocalDate.now());
         user.setChatLimitResetDate(LocalDate.now());
         userRepository.save(user);
+
+        // Send confirmation email
+        String name = user.getFirstName() != null ? user.getFirstName() : "Valued Member";
+        emailService.sendSubscriptionSuccessEmail(user.getEmail(), name, tier);
     }
 
     private void resetDocumentLimitsIfNeeded(UserEntity user) {

@@ -21,4 +21,6 @@ public class profileDTO {
     private LocalDate dateOfBirth;
     private String profilePictureUrl;
     private String subscriptionTier;
+    private Integer reportsUploadedThisWeek;
+    private Integer chatsThisWeek;
 }
