@@ -31,6 +31,7 @@ public class ChatService {
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
     private final GeminiService geminiService;
+    private final ReferralService referralService;
 
     private static final int MAX_CONTEXT_CHARS = 15000; // Limit context size to avoid token overflow
 
@@ -121,6 +122,9 @@ public class ChatService {
                 .relatedDocumentIds("all_docs")
                 .build();
         chatHistoryRepository.save(aiMessage);
+
+        // Track referral progress
+        referralService.incrementChatCount(user.getId());
 
         return ChatMessageResponse.builder()
                 .id(aiMessage.getId())

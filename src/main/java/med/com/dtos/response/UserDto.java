@@ -11,4 +11,6 @@ public class UserDto {
     private String firstName;
     private String lastName;
     private String subscriptionTier;
+    private String myReferralCode;
+    private Integer credits;
 }

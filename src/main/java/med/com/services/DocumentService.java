@@ -43,6 +43,7 @@ public class DocumentService {
     private final TextractService textractService;
     private final TimelineService timelineService;
     private final DateExtractionService dateExtractionService;
+    private final ReferralService referralService;
 
     private final GeminiService geminiService;
 
@@ -361,6 +362,11 @@ public class DocumentService {
 
             // Automatically create timeline event
             timelineService.createOrUpdateEventFromDocument(doc);
+            
+            // Track referral progress
+            if (doc.getUser() != null) {
+                referralService.incrementDocumentCount(doc.getUser().getId());
+            }
 
             log.info("Successfully processed OCR and generated timeline event for documentId={}", documentId);
         } catch (Exception e) {

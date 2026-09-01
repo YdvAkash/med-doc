@@ -42,6 +42,7 @@ public class AuthServiceImpl implements AuthService {
     private final S3Service s3Service;
     private final OtpRepository otpRepository;
     private final EmailService emailService;
+    private final med.com.services.ReferralService referralService;
 
     private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of("image/jpeg", "image/jpg", "image/png");
 
@@ -68,8 +69,15 @@ public class AuthServiceImpl implements AuthService {
                     .firstName(request.getFirstName())
                     .lastName(request.getLastName())
                     .isActive(false) // Wait for OTP
+                    .myReferralCode(referralService.generateUniqueReferralCode(request.getFirstName()))
+                    .credits(0)
                     .build();
             savedUser = userRepository.save(user);
+
+            // Handle incoming referral code
+            if (request.getReferralCode() != null && !request.getReferralCode().trim().isEmpty()) {
+                referralService.processReferralOnSignup(savedUser, request.getReferralCode());
+            }
         }
 
         // Generate and send OTP
@@ -142,6 +150,11 @@ public class AuthServiceImpl implements AuthService {
         UserEntity user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User profile not found."));
         
+        if (user.getMyReferralCode() == null) {
+            user.setMyReferralCode(referralService.generateUniqueReferralCode(user.getFirstName()));
+            userRepository.save(user);
+        }
+
         return mapToProfileDto(user);
     }
 
@@ -215,6 +228,8 @@ public class AuthServiceImpl implements AuthService {
                 .subscriptionTier(user.getSubscriptionTier())
                 .reportsUploadedThisWeek(user.getReportsUploadedThisWeek())
                 .chatsThisWeek(user.getChatsThisWeek())
+                .myReferralCode(user.getMyReferralCode())
+                .credits(user.getCredits() == null ? 0 : user.getCredits())
                 .profilePictureUrl(getPresignedUrlOrRaw(user.getProfilePictureUrl()))
                 .build();
     }
