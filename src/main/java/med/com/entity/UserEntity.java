@@ -91,4 +91,11 @@ public class UserEntity {
 
     @Column(name = "push_token", length = 255)
     private String pushToken;
+
+    @Column(name = "my_referral_code", length = 50, unique = true)
+    private String myReferralCode;
+
+    @Column(name = "credits")
+    @Builder.Default
+    private Integer credits = 0;
 }

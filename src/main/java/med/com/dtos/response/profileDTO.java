@@ -23,4 +23,6 @@ public class profileDTO {
     private String subscriptionTier;
     private Integer reportsUploadedThisWeek;
     private Integer chatsThisWeek;
+    private String myReferralCode;
+    private Integer credits;
 }
