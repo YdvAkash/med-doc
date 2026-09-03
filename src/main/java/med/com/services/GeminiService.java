@@ -66,28 +66,54 @@ public class GeminiService {
     public static class DocumentAnalysisResult {
         private String title;
         private java.util.List<String> tags;
+        private String providerName;
         private java.util.List<med.com.dtos.response.DocumentResponse.MetricDto> metrics;
+        private String category;
+        private String sampleId;
+        private String orderedBy;
+        private String verifiedStatus;
+        private String labName;
+        private String doctorName;
     }
 
     public DocumentAnalysisResult extractDocumentMetadata(String rawText) {
-        String prompt = "You are a medical data extraction assistant. Parse the following OCR text from a medical report and extract the document title, relevant tags, and key health metrics (like Blood Sugar, HbA1c, Cholesterol, WBC, etc.).\n" +
-                "IMPORTANT: If the text does NOT appear to be a valid medical report (e.g. a random photo or selfie) or is extremely short, return the title as 'Unknown Document' and do not extract any tags or metrics.\n" +
-                "CRITICAL INSTRUCTION: DO NOT hallucinate. ONLY use actual values, names, or metrics found in the raw text. Do NOT use placeholder examples (like 'Dr. Lal PathLabs') if they are not in the text.\n" +
+        String prompt = "You are a medical data extraction assistant. Parse the following OCR text from a medical report and extract the document title, relevant tags, and key health metrics (like Blood Sugar, HbA1c, Cholesterol, WBC, etc.), along with other specific metadata.\n"
+                +
+                "IMPORTANT: If the text does NOT appear to be a valid medical report (e.g. a random photo or selfie) or is extremely short, return the title as 'Unknown Document' and do not extract any tags or metrics.\n"
+                +
+                "CRITICAL INSTRUCTION: DO NOT hallucinate. ONLY use actual values, names, or metrics found in the raw text. Do NOT use placeholder examples (like 'Dr. Lal PathLabs') if they are not in the text.\n"
+                +
                 "Return the results STRICTLY as a JSON object matching this format:\n" +
                 "{\n" +
-                "  \"title\": \"Complete Blood Count\", // A strict 2-3 word name indicating the exact report type. If not a medical report, return 'Unknown Document'.\n" +
-                "  \"tags\": [\"Hospital/Lab Name\", \"Major Finding\"], // Up to 2 specific tags ACTUALLY FOUND in the text. Leave empty array [] if none found.\n" +
+                "  \"title\": \"Complete Blood Count\", // A strict 2-3 word name indicating the exact report type. If not a medical report, return 'Unknown Document'.\n"
+                +
+                "  \"category\": \"REPORT\", // Must be EXACTLY one of: PRESCRIPTION, LAB_TEST, IMAGING, or REPORT.\n" +
+                "  \"providerName\": \"City Diagnostics\", // A generic provider name if found.\n"
+                +
+                "  \"labName\": \"City Diagnostics\", // The name of the laboratory or imaging center if explicitly found.\n"
+                +
+                "  \"doctorName\": \"Dr. Rajesh Sharma\", // The name of the consulting or referring doctor if explicitly found.\n"
+                +
+                "  \"sampleId\": \"12345\", // The sample ID, specimen ID, or registration number if found.\n"
+                +
+                "  \"orderedBy\": \"Dr. Rajesh Sharma\", // The person who ordered the test, if found.\n"
+                +
+                "  \"verifiedStatus\": \"Verified\", // Usually 'Verified' or 'Digitally Signed' if the report indicates it.\n"
+                +
+                "  \"tags\": [\"Major Finding\"], // Up to 2 specific tags ACTUALLY FOUND in the text. Leave empty array [] if none found.\n"
+                +
                 "  \"metrics\": [\n" +
                 "    {\n" +
                 "      \"name\": \"Blood Sugar\", // Only include if found in text\n" +
                 "      \"value\": \"108\",\n" +
                 "      \"unit\": \"mg/dL\",\n" +
-                "      \"status\": \"normal\", // MUST BE exactly \"normal\" or \"attention\" based on standard medical ranges\n" +
+                "      \"status\": \"normal\", // MUST BE exactly \"normal\" or \"attention\" based on standard medical ranges\n"
+                +
                 "      \"icon\": \"water-drop\" // Provide a suitable MaterialIcon name\n" +
                 "    }\n" +
                 "  ]\n" +
                 "}\n" +
-                "Return ONLY the JSON object without any markdown formatting, backticks, or extra text.\n" +
+                "Return ONLY the JSON object without any markdown formatting, backticks, or extra text. If any specific string field is not found in the text, omit it or set it to null.\n" +
                 "\n" +
                 "Raw Text:\n" +
                 rawText;
@@ -98,12 +124,12 @@ public class GeminiService {
             GeminiChatRequest.Content content = new GeminiChatRequest.Content();
             content.setParts(java.util.Collections.singletonList(part));
             content.setRole("user");
-            
+
             GeminiChatRequest request = new GeminiChatRequest();
             request.setContents(java.util.Collections.singletonList(content));
 
             String responseText = generateChatResponse(request);
-            
+
             if (responseText.startsWith("Sorry")) {
                 log.warn("Gemini API failed (possibly quota exceeded), skipping metadata extraction.");
                 return new DocumentAnalysisResult();
@@ -131,7 +157,8 @@ public class GeminiService {
     }
 
     public String generateSummary(String rawText) {
-        String prompt = "You are a medical doctor. Read the following OCR text from a patient's medical report and write a clear, easy-to-understand summary. Explain what the report is for, highlight any abnormal findings, and explain what they mean in simple terms so the patient can easily understand their health status. Keep the summary concise but informative (around 3-4 sentences).\n\n" +
+        String prompt = "You are a medical doctor. Read the following OCR text from a patient's medical report and write a clear, easy-to-understand summary. Explain what the report is for, highlight any abnormal findings, and explain what they mean in simple terms so the patient can easily understand their health status. Keep the summary concise but informative (around 3-4 sentences).\n\n"
+                +
                 "Raw Text:\n" +
                 rawText;
 
@@ -141,12 +168,12 @@ public class GeminiService {
             GeminiChatRequest.Content content = new GeminiChatRequest.Content();
             content.setParts(java.util.Collections.singletonList(part));
             content.setRole("user");
-            
+
             GeminiChatRequest request = new GeminiChatRequest();
             request.setContents(java.util.Collections.singletonList(content));
 
             String responseText = generateChatResponse(request);
-            
+
             if (responseText.startsWith("Sorry")) {
                 log.warn("Gemini API failed to generate summary.");
                 return "We could not generate a summary at this time. Please review the raw report or consult your doctor.";
@@ -160,7 +187,9 @@ public class GeminiService {
     }
 
     public String translateText(String textToTranslate, String targetLanguage) {
-        String prompt = "You are a professional medical translator. Translate the following text into " + targetLanguage + ". Ensure that medical terminology is accurate and the tone remains professional. Return ONLY the translated text.\n\n" +
+        String prompt = "You are a professional medical translator. Translate the following text into " + targetLanguage
+                + ". Ensure that medical terminology is accurate and the tone remains professional. Return ONLY the translated text.\n\n"
+                +
                 "Text to translate:\n" +
                 textToTranslate;
 
@@ -170,12 +199,12 @@ public class GeminiService {
             GeminiChatRequest.Content content = new GeminiChatRequest.Content();
             content.setParts(java.util.Collections.singletonList(part));
             content.setRole("user");
-            
+
             GeminiChatRequest request = new GeminiChatRequest();
             request.setContents(java.util.Collections.singletonList(content));
 
             String responseText = generateChatResponse(request);
-            
+
             if (responseText.startsWith("Sorry")) {
                 log.warn("Gemini API failed to translate text.");
                 return textToTranslate; // Fallback to original text
