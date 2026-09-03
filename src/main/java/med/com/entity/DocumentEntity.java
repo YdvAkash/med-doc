@@ -12,14 +12,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-    name = "documents",
-    indexes = {
+@Table(name = "documents", indexes = {
         @Index(name = "idx_documents_user_id", columnList = "user_id"),
         @Index(name = "idx_documents_extracted_event_date", columnList = "extracted_event_date"),
         @Index(name = "idx_documents_upload_date", columnList = "upload_date")
-    }
-)
+})
 @Data
 @Builder
 @NoArgsConstructor
@@ -72,6 +69,9 @@ public class DocumentEntity {
     @Column(name = "tags", length = 500)
     private String tags; // Comma-separated AI-extracted tags
 
+    @Column(name = "provider_name", length = 255)
+    private String providerName; // Doctor, clinic, or hospital name
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 
@@ -101,4 +101,24 @@ public class DocumentEntity {
     @OneToMany(mappedBy = "relatedDocument", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private java.util.List<ReminderEntity> reminders = new java.util.ArrayList<>();
+
+    // New Metadata Fields
+    @Column(name = "sample_id", length = 100)
+    private String sampleId;
+
+    @Column(name = "ordered_by", length = 255)
+    private String orderedBy;
+
+    @Column(name = "verified_status", length = 100)
+    private String verifiedStatus; // e.g. "Verified", "Unverified"
+
+    @Column(name = "lab_name", length = 255)
+    private String labName;
+
+    @Column(name = "doctor_name", length = 255)
+    private String doctorName;
+
+    @ManyToMany(mappedBy = "documents", fetch = FetchType.LAZY)
+    @Builder.Default
+    private java.util.List<FolderEntity> folders = new java.util.ArrayList<>();
 }

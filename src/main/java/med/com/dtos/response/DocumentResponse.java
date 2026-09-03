@@ -20,8 +20,16 @@ public class DocumentResponse {
     private String notes;
     private String title;
     private java.util.List<String> tags;
+    private String providerName;
     private String downloadUrl; // pre-signed URL, populated on GET single
     private String summary; // Doctor's summary
+
+    // New Metadata Fields
+    private String sampleId;
+    private String orderedBy;
+    private String verifiedStatus;
+    private String labName;
+    private String doctorName;
     private java.util.List<MetricDto> metrics;
 
     @Data
@@ -30,6 +38,6 @@ public class DocumentResponse {
         private String value;
         private String unit;
         private String status; // "normal" or "attention"
-        private String icon;   // MaterialIcon name
+        private String icon; // MaterialIcon name
     }
 }

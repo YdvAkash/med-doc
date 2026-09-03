@@ -62,11 +62,23 @@ public class DocumentController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String category,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime startDate,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime endDate,
             Principal principal
     ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("uploadDate").descending());
-        Page<DocumentResponse> documents = documentService.listDocuments(principal.getName(), search, category, pageable);
+        Page<DocumentResponse> documents = documentService.listDocuments(principal.getName(), search, category, startDate, endDate, pageable);
         return ResponseEntity.ok(ApiResponse.success(documents));
+    }
+
+    /**
+     * GET /api/documents/stats
+     * Returns dashboard stats (document counts by category).
+     */
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Long>>> getStats(Principal principal) {
+        java.util.Map<String, Long> stats = documentService.getDashboardStats(principal.getName());
+        return ResponseEntity.ok(ApiResponse.success(stats));
     }
 
     /**

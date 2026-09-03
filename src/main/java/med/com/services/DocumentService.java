@@ -44,6 +44,7 @@ public class DocumentService {
     private final TimelineService timelineService;
     private final DateExtractionService dateExtractionService;
     private final ReferralService referralService;
+    private final med.com.repository.AnalysisResultRepository analysisResultRepository;
 
     private final GeminiService geminiService;
 
@@ -91,12 +92,42 @@ public class DocumentService {
     // -----------------------------------------------------------------------
     // List (paginated with filters)
     // -----------------------------------------------------------------------
-    public Page<DocumentResponse> listDocuments(String email, String search, String category, Pageable pageable) {
+    public Page<DocumentResponse> listDocuments(String email, String search, String category, java.time.LocalDateTime startDate, java.time.LocalDateTime endDate, Pageable pageable) {
         UserEntity user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User profile not found."));
 
-        return documentRepository.findByUserIdWithFilters(user.getId(), search, category, pageable)
+        return documentRepository.findByUserIdWithFilters(user.getId(), search, category, startDate, endDate, pageable)
                 .map(doc -> toResponse(doc, null));
+    }
+
+    // -----------------------------------------------------------------------
+    // Dashboard Stats
+    // -----------------------------------------------------------------------
+    public java.util.Map<String, Long> getDashboardStats(String email) {
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User profile not found."));
+
+        java.util.List<Object[]> stats = documentRepository.countDocumentsByCategory(user.getId());
+        java.util.Map<String, Long> result = new java.util.HashMap<>();
+        result.put("REPORT", 0L);
+        result.put("LAB_TEST", 0L);
+        result.put("PRESCRIPTION", 0L);
+        result.put("IMAGING", 0L);
+
+        for (Object[] row : stats) {
+            String cat = (String) row[0];
+            Long count = row[1] != null ? ((Number) row[1]).longValue() : 0L;
+            
+            String upperCat = (cat != null && !cat.trim().isEmpty()) ? cat.toUpperCase() : "REPORT";
+            
+            if (result.containsKey(upperCat)) {
+                result.put(upperCat, result.get(upperCat) + count);
+            } else {
+                // If the category is something unrecognized (e.g., legacy string), default to REPORT
+                result.put("REPORT", result.get("REPORT") + count);
+            }
+        }
+        return result;
     }
 
     // -----------------------------------------------------------------------
@@ -217,6 +248,12 @@ public class DocumentService {
                 .processingStatus(doc.getProcessingStatus())
                 .category(doc.getCategory())
                 .notes(doc.getNotes())
+                .providerName(doc.getProviderName())
+                .sampleId(doc.getSampleId())
+                .orderedBy(doc.getOrderedBy())
+                .verifiedStatus(doc.getVerifiedStatus())
+                .labName(doc.getLabName())
+                .doctorName(doc.getDoctorName())
                 .downloadUrl(downloadUrl)
                 .summary(summary)
                 .metrics(metrics)
@@ -239,17 +276,18 @@ public class DocumentService {
 
         String summary = geminiService.generateSummary(doc.getRawText());
 
-        med.com.entity.AnalysisResultEntity analysisResult = doc.getAnalysisResult();
-        if (analysisResult == null) {
-            analysisResult = med.com.entity.AnalysisResultEntity.builder()
-                    .document(doc)
-                    .analysisType("single_document")
-                    .build();
-        }
+        med.com.entity.AnalysisResultEntity analysisResult = analysisResultRepository.findByDocumentId(doc.getId())
+                .orElseGet(() -> med.com.entity.AnalysisResultEntity.builder()
+                        .document(doc)
+                        .analysisType("single_document")
+                        .build());
         
         analysisResult.setSummary(summary);
+        analysisResultRepository.save(analysisResult);
+        
         doc.setAnalysisResult(analysisResult);
-        documentRepository.save(doc); // Cascades save to AnalysisResultEntity
+        // Only saving doc here just in case, but cascade shouldn't cause duplicate key anymore
+        documentRepository.save(doc);
 
         return summary;
     }
@@ -336,6 +374,29 @@ public class DocumentService {
                 }
                 if (analysisResult.getTags() != null && !analysisResult.getTags().isEmpty()) {
                     doc.setTags(String.join(", ", analysisResult.getTags()));
+                }
+                if (analysisResult.getCategory() != null && !analysisResult.getCategory().isEmpty()) {
+                    doc.setCategory(analysisResult.getCategory());
+                } else {
+                    doc.setCategory("REPORT");
+                }
+                if (analysisResult.getProviderName() != null && !analysisResult.getProviderName().isEmpty()) {
+                    doc.setProviderName(analysisResult.getProviderName());
+                }
+                if (analysisResult.getSampleId() != null && !analysisResult.getSampleId().isEmpty()) {
+                    doc.setSampleId(analysisResult.getSampleId());
+                }
+                if (analysisResult.getOrderedBy() != null && !analysisResult.getOrderedBy().isEmpty()) {
+                    doc.setOrderedBy(analysisResult.getOrderedBy());
+                }
+                if (analysisResult.getVerifiedStatus() != null && !analysisResult.getVerifiedStatus().isEmpty()) {
+                    doc.setVerifiedStatus(analysisResult.getVerifiedStatus());
+                }
+                if (analysisResult.getLabName() != null && !analysisResult.getLabName().isEmpty()) {
+                    doc.setLabName(analysisResult.getLabName());
+                }
+                if (analysisResult.getDoctorName() != null && !analysisResult.getDoctorName().isEmpty()) {
+                    doc.setDoctorName(analysisResult.getDoctorName());
                 }
                 
                 java.util.List<DocumentResponse.MetricDto> metricsDtoList = analysisResult.getMetrics();
